@@ -1,0 +1,302 @@
+{
+  "name": "Workflow 1: patients.csv → patients_raw",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c7c69a9e-bb51-4384-9d02-b01152cbb662",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/patients.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1778c3b3-a6c9-4d7f-b90e-5c4e3568cdbd",
+      "name": "Read file (patients)"
+    },
+    {
+      "parameters": {
+        "batchSize": 1000,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        864,
+        0
+      ],
+      "id": "0db96d1b-4c73-440f-9078-3103f2671c94",
+      "name": "Loop Over Items (patients)"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        0
+      ],
+      "id": "5ece5fcb-8e84-4e8f-b6a5-c8c7f93f9888",
+      "name": "Extract from File (patients)"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "medical_appointment_sources",
+          "mode": "list",
+          "cachedResultName": "medical_appointment_sources"
+        },
+        "table": {
+          "__rl": true,
+          "value": "patients_raw",
+          "mode": "list",
+          "cachedResultName": "patients_raw"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "patient_id": "={{ $json.patient_id }}",
+            "name": "={{ $json.name }}",
+            "sex": "={{ $json.sex }}",
+            "dob": "={{ $json.dob }}",
+            "insurance": "={{ $json.insurance }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sex",
+              "displayName": "sex",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dob",
+              "displayName": "dob",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "insurance",
+              "displayName": "insurance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1104,
+        176
+      ],
+      "id": "16645947-132e-4a1c-882a-08b443b113ca",
+      "name": "Insert rows in a table (patients)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me (patients)",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        176
+      ],
+      "id": "49748001-c3b7-416c-bd53-8444109b6e3d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM medical_appointment_sources.patients_raw\nLIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1104,
+        -144
+      ],
+      "id": "422decf8-a353-4307-a8d3-5d0e1565c9d6",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE medical_appointment_sources.patients_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        0
+      ],
+      "id": "20b437ef-2e7a-4d7a-a623-a54e86eccc89",
+      "name": "TRUNCATE patients",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "TRUNCATE patients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read file (patients)": {
+      "main": [
+        [
+          {
+            "node": "Extract from File (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items (patients)": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File (patients)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table (patients)": {
+      "main": [
+        [
+          {
+            "node": "Replace Me (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me (patients)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRUNCATE patients": {
+      "main": [
+        [
+          {
+            "node": "Read file (patients)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "92a1e449-41fb-4d6f-9424-e79add50dda9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "287dac36dda958907f9cf9dafc99626f4495a0a47ff1c9a1d1b5edb9e842357e"
+  },
+  "id": "917cTXBj0U7nVxfc",
+  "tags": []
+}

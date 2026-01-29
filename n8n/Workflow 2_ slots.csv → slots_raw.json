@@ -1,0 +1,292 @@
+{
+  "name": "Workflow 2: slots.csv → slots_raw",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        16
+      ],
+      "id": "a0284a6d-6857-445b-9991-7a9e2906a9b0",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE medical_appointment_sources.slots_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -592,
+        16
+      ],
+      "id": "78ae24f3-9a9c-4ffd-b129-44131dc2c10f",
+      "name": "TRUNCATE slots",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/slots.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        16
+      ],
+      "id": "6e0e2db3-17af-4c02-9209-5519ee637637",
+      "name": "Read file (slots)"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        16
+      ],
+      "id": "4799ea3b-d097-46cf-971b-b3b6959bf931",
+      "name": "Extract from File (slots)"
+    },
+    {
+      "parameters": {
+        "batchSize": 1000,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        64,
+        16
+      ],
+      "id": "2e601686-11f1-4bf4-8a2b-ccd549be89d1",
+      "name": "Loop Over Items (slots)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me (slots)",
+      "typeVersion": 1,
+      "position": [
+        528,
+        176
+      ],
+      "id": "7b8973c9-4224-475c-b8e6-6257bf59906d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM medical_appointment_sources.slots_raw\nLIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        -80
+      ],
+      "id": "f26dae2f-9764-44ef-a33c-3e0bd7269e26",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "medical_appointment_sources",
+          "mode": "list",
+          "cachedResultName": "medical_appointment_sources"
+        },
+        "table": {
+          "__rl": true,
+          "value": "slots_raw",
+          "mode": "list",
+          "cachedResultName": "slots_raw"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slot_id": "={{ $json.slot_id }}",
+            "appointment_date": "={{ $json.appointment_date }}",
+            "appointment_time": "={{ $json.appointment_time }}",
+            "is_available": "={{ $json.is_available }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "slot_id",
+              "displayName": "slot_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_date",
+              "displayName": "appointment_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_time",
+              "displayName": "appointment_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_available",
+              "displayName": "is_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        176
+      ],
+      "id": "e086ab3b-6a23-4f44-8d07-6b0629a8b463",
+      "name": "Insert rows in a table (slots)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "TRUNCATE slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRUNCATE slots": {
+      "main": [
+        [
+          {
+            "node": "Read file (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read file (slots)": {
+      "main": [
+        [
+          {
+            "node": "Extract from File (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File (slots)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items (slots)": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me (slots)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table (slots)": {
+      "main": [
+        [
+          {
+            "node": "Replace Me (slots)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "42fe7701-39be-486b-ac2a-03fc702b2e67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "287dac36dda958907f9cf9dafc99626f4495a0a47ff1c9a1d1b5edb9e842357e"
+  },
+  "id": "692dYz4HzeeVjlMG",
+  "tags": []
+}

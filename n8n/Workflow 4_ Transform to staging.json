@@ -1,0 +1,287 @@
+{
+  "name": "Workflow 4: Transform to staging",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "53a2b982-50e6-41bf-bac9-19c023b24b82",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DROP TABLE IF EXISTS medical_appointment_staging.patients_clean;\n\nCREATE TABLE medical_appointment_staging.patients_clean AS\nSELECT\n  NULLIF(patient_id,'') AS patient_id,\n  NULLIF(name,'') AS name,\n  NULLIF(sex,'') AS sex,\n  CASE\n    WHEN NULLIF(dob,'') IS NULL THEN NULL\n    ELSE to_date(NULLIF(dob,''), 'MM/DD/YYYY')\n  END AS dob,\n  NULLIF(insurance,'') AS insurance\nFROM medical_appointment_sources.patients_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c9f4280b-9181-45ad-94a4-53a9b6a30655",
+      "name": "patients_clean (TEXT → DATE)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DROP TABLE IF EXISTS medical_appointment_staging.slots_clean;\n\nCREATE TABLE medical_appointment_staging.slots_clean AS\nSELECT\n  NULLIF(slot_id,'') AS slot_id,\n  CASE\n    WHEN NULLIF(appointment_date,'') IS NULL THEN NULL\n    ELSE to_date(NULLIF(appointment_date,''), 'MM/DD/YYYY')\n  END AS appointment_date,\n  NULLIF(appointment_time,'')::time AS appointment_time,\n  lower(trim(NULLIF(is_available,'')))::boolean AS is_available\nFROM medical_appointment_sources.slots_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        0
+      ],
+      "id": "82d9df66-86e3-412d-b2dc-87392a03816a",
+      "name": "slots_clean (TEXT → DATE/TIME/BOOLEAN)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DROP TABLE IF EXISTS medical_appointment_staging.appointments_clean;\n\nCREATE TABLE medical_appointment_staging.appointments_clean AS\nSELECT\n  NULLIF(appointment_id,'') AS appointment_id,\n  NULLIF(slot_id,'') AS slot_id,\n  NULLIF(patient_id,'') AS patient_id,\n\n  NULLIF(scheduling_date,'')::date AS scheduling_date,\n  NULLIF(appointment_date,'')::date AS appointment_date,\n  NULLIF(appointment_time,'')::time AS appointment_time,\n\n  -- može biti 5.2 → pretvori u numeric pa zaokruži u int\n  CASE\n    WHEN NULLIF(scheduling_interval,'') ~ '^-?\\d+(\\.\\d+)?$'\n      THEN ROUND((NULLIF(scheduling_interval,'')::numeric))::int\n    ELSE NULL\n  END AS scheduling_interval_days,\n\n  NULLIF(status,'') AS status,\n\n  NULLIF(check_in_time,'')::time AS check_in_time,\n  NULLIF(start_time,'')::time AS start_time,\n  NULLIF(end_time,'')::time AS end_time,\n\n  CASE\n    WHEN NULLIF(appointment_duration,'') ~ '^-?\\d+(\\.\\d+)?$'\n      THEN ROUND((NULLIF(appointment_duration,'')::numeric))::int\n    ELSE NULL\n  END AS appointment_duration_min,\n\n  CASE\n    WHEN NULLIF(waiting_time,'') ~ '^-?\\d+(\\.\\d+)?$'\n      THEN ROUND((NULLIF(waiting_time,'')::numeric))::int\n    ELSE NULL\n  END AS waiting_time_min,\n\n  NULLIF(sex,'') AS sex,\n\n  CASE\n    WHEN NULLIF(age,'') ~ '^\\d+(\\.\\d+)?$'\n      THEN FLOOR((NULLIF(age,'')::numeric))::int\n    ELSE NULL\n  END AS age,\n\n  NULLIF(age_group,'') AS age_group,\n\n  EXTRACT(DOW FROM NULLIF(appointment_date,'')::date) AS day_of_week_num,\n  EXTRACT(HOUR FROM NULLIF(appointment_time,'')::time) AS hour_of_day\nFROM medical_appointment_sources.appointments_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        0
+      ],
+      "id": "2c605776-b5c2-4439-8bf9-2c6562e3c8e5",
+      "name": "appointments_clean (TEXT → DATE/TIME/INT + pomoćne kolone)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM medical_appointment_sources.patients_raw)      AS patients_raw,\n  (SELECT COUNT(*) FROM medical_appointment_sources.slots_raw)         AS slots_raw,\n  (SELECT COUNT(*) FROM medical_appointment_sources.appointments_raw)  AS appointments_raw,\n  (SELECT COUNT(*) FROM medical_appointment_staging.patients_clean)    AS patients_clean,\n  (SELECT COUNT(*) FROM medical_appointment_staging.slots_clean)       AS slots_clean,\n  (SELECT COUNT(*) FROM medical_appointment_staging.appointments_clean) AS appointments_clean;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        0
+      ],
+      "id": "dc3dad88-8159-407a-846a-1aa557c0a42a",
+      "name": "provjera + “sanity check”",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT status, COUNT(*)\nFROM medical_appointment_staging.appointments_clean\nGROUP BY status\nORDER BY COUNT(*) DESC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "8bd8ef71-bb5c-490f-a967-1dea1d9d96d8",
+      "name": "provjera statusa",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  SUM(CASE WHEN p.patient_id IS NULL THEN 1 ELSE 0 END) AS missing_patients,\n  SUM(CASE WHEN s.slot_id IS NULL THEN 1 ELSE 0 END) AS missing_slots\nFROM medical_appointment_staging.appointments_clean a\nLEFT JOIN medical_appointment_staging.patients_clean p\n  ON a.patient_id = p.patient_id\nLEFT JOIN medical_appointment_staging.slots_clean s\n  ON a.slot_id = s.slot_id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "baa49fa4-0466-49f5-b361-0c112d7bc2a4",
+      "name": "FK provjera",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DROP TABLE IF EXISTS medical_appointment_staging.stg_appointments;\n\nCREATE TABLE medical_appointment_staging.stg_appointments AS\nSELECT\n  a.appointment_id,\n  a.slot_id,\n  a.patient_id,\n  a.scheduling_date,\n  a.appointment_date,\n  a.appointment_time,\n  a.status, \n  a.check_in_time,\n  a.start_time,\n  a.end_time,\n  a.scheduling_interval_days,\n  a.waiting_time_min,\n  a.appointment_duration_min,\n\n  p.name AS patient_name,\n  COALESCE(a.sex, p.sex) AS patient_sex,\n  p.dob AS patient_dob,\n  p.insurance AS insurance_type,\n\n  s.appointment_date AS slot_date,\n  s.appointment_time AS slot_time,\n  s.is_available\n\nFROM medical_appointment_staging.appointments_clean a\nLEFT JOIN medical_appointment_staging.patients_clean p\n  ON a.patient_id = p.patient_id\nLEFT JOIN medical_appointment_staging.slots_clean s\n  ON a.slot_id = s.slot_id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "099fa9f3-bea0-45cd-91c8-b24b42e4f25c",
+      "name": "MASTER tabela",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM medical_appointment_staging.appointments_clean) AS appointments_clean_cnt,\n  (SELECT COUNT(*) FROM medical_appointment_staging.stg_appointments) AS enriched_cnt;\n\nSELECT status, COUNT(*)\nFROM medical_appointment_staging.stg_appointments\nGROUP BY status\nORDER BY COUNT(*) DESC;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "0bc22061-c07b-47ac-b801-6ae907673dad",
+      "name": "Sanity check",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "patients_clean (TEXT → DATE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "patients_clean (TEXT → DATE)": {
+      "main": [
+        [
+          {
+            "node": "slots_clean (TEXT → DATE/TIME/BOOLEAN)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slots_clean (TEXT → DATE/TIME/BOOLEAN)": {
+      "main": [
+        [
+          {
+            "node": "appointments_clean (TEXT → DATE/TIME/INT + pomoćne kolone)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "appointments_clean (TEXT → DATE/TIME/INT + pomoćne kolone)": {
+      "main": [
+        [
+          {
+            "node": "provjera + “sanity check”",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "provjera + “sanity check”": {
+      "main": [
+        [
+          {
+            "node": "provjera statusa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "provjera statusa": {
+      "main": [
+        [
+          {
+            "node": "FK provjera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FK provjera": {
+      "main": [
+        [
+          {
+            "node": "MASTER tabela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MASTER tabela": {
+      "main": [
+        [
+          {
+            "node": "Sanity check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c8346025-a717-43f3-91e8-79cfba8579b9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "287dac36dda958907f9cf9dafc99626f4495a0a47ff1c9a1d1b5edb9e842357e"
+  },
+  "id": "c6dyufHboGLPGmQG",
+  "tags": []
+}

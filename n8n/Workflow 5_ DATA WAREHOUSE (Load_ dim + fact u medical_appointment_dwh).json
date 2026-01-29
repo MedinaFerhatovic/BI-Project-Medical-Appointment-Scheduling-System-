@@ -1,0 +1,319 @@
+{
+  "name": "Workflow 5: DATA WAREHOUSE (Load: dim + fact u medical_appointment_dwh)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        -16
+      ],
+      "id": "caa26ec4-0503-4f2b-b79d-06fdb93846e5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE SCHEMA IF NOT EXISTS medical_appointment_dwh;\n\nDROP TABLE IF EXISTS medical_appointment_dwh.fact_appointments;\nDROP TABLE IF EXISTS medical_appointment_dwh.dim_time;\nDROP TABLE IF EXISTS medical_appointment_dwh.dim_date;\nDROP TABLE IF EXISTS medical_appointment_dwh.dim_status;\nDROP TABLE IF EXISTS medical_appointment_dwh.dim_patient;\nDROP TABLE IF EXISTS medical_appointment_dwh.dim_insurance;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -736,
+        -16
+      ],
+      "id": "fffc7963-4354-4652-963f-fc20764ccc06",
+      "name": "create and drop ",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.dim_insurance (\n  insurance_sk   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  insurance_type TEXT UNIQUE\n);\n\nINSERT INTO medical_appointment_dwh.dim_insurance (insurance_type)\nSELECT DISTINCT insurance_type\nFROM medical_appointment_staging.stg_appointments\nWHERE insurance_type IS NOT NULL;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -528,
+        -16
+      ],
+      "id": "571bb6cd-802c-41b6-9a0a-a902f5a5b8a8",
+      "name": "dim_insurance",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.dim_patient (\n  patient_sk BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  patient_id TEXT UNIQUE,\n  patient_name TEXT,\n  sex TEXT,\n  dob DATE,\n  insurance_sk  BIGINT REFERENCES medical_appointment_dwh.dim_insurance(insurance_sk)\n);\n\nINSERT INTO medical_appointment_dwh.dim_patient (patient_id, patient_name, sex, dob, insurance_sk)\nSELECT\n  e.patient_id,\n  e.patient_name,\n  e.patient_sex,\n  e.patient_dob,\n  i.insurance_sk\nFROM (\n  SELECT DISTINCT patient_id, patient_name, patient_sex, patient_dob, insurance_type\n  FROM medical_appointment_staging.stg_appointments\n  WHERE patient_id IS NOT NULL\n) e\nLEFT JOIN medical_appointment_dwh.dim_insurance i\n  ON e.insurance_type = i.insurance_type;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -320,
+        -16
+      ],
+      "id": "6b1caed3-4283-48ca-82c3-a77f1353bbe6",
+      "name": "dim_patient",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.dim_status (\n  status_sk   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  status_name TEXT UNIQUE\n);\n\nINSERT INTO medical_appointment_dwh.dim_status (status_name)\nSELECT DISTINCT status\nFROM medical_appointment_staging.stg_appointments\nWHERE status IS NOT NULL;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -112,
+        -16
+      ],
+      "id": "16a3ea18-fa86-4a1c-be27-3e9adc6db36c",
+      "name": "dim_status",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.dim_date (\n  date_sk BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  full_date DATE UNIQUE,\n  year INT,\n  month INT,\n  day INT,\n  day_of_week INT\n);\n\nINSERT INTO medical_appointment_dwh.dim_date (full_date, year, month, day, day_of_week)\nSELECT\n  d AS full_date,\n  EXTRACT(YEAR  FROM d)::int,\n  EXTRACT(MONTH FROM d)::int,\n  EXTRACT(DAY   FROM d)::int,\n  EXTRACT(DOW   FROM d)::int\nFROM (\n  SELECT DISTINCT appointment_date AS d\n  FROM medical_appointment_staging.stg_appointments\n  WHERE appointment_date IS NOT NULL\n  UNION\n  SELECT DISTINCT scheduling_date AS d\n  FROM medical_appointment_staging.stg_appointments\n  WHERE scheduling_date IS NOT NULL\n) x;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        96,
+        -16
+      ],
+      "id": "18ad3571-0aa1-43d5-9cf4-195151777527",
+      "name": "dim_date",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.dim_time (\n  time_sk BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  full_time TIME UNIQUE,\n  hour INT,\n  minute INT,\n  part_of_day TEXT\n);\n\nINSERT INTO medical_appointment_dwh.dim_time (full_time, hour, minute, part_of_day)\nSELECT\n  t AS full_time,\n  EXTRACT(HOUR FROM t)::int,\n  EXTRACT(MINUTE FROM t)::int,\n  CASE\n    WHEN EXTRACT(HOUR FROM t) BETWEEN 6 AND 11 THEN 'Morning'\n    WHEN EXTRACT(HOUR FROM t) BETWEEN 12 AND 16 THEN 'Afternoon'\n    WHEN EXTRACT(HOUR FROM t) BETWEEN 17 AND 21 THEN 'Evening'\n    ELSE 'Night'\n  END AS part_of_day\nFROM (\n  SELECT DISTINCT appointment_time AS t\n  FROM medical_appointment_staging.stg_appointments\n  WHERE appointment_time IS NOT NULL\n  UNION\n  SELECT DISTINCT check_in_time AS t\n  FROM medical_appointment_staging.stg_appointments\n  WHERE check_in_time IS NOT NULL\n  UNION\n  SELECT DISTINCT start_time AS t\n  FROM medical_appointment_staging.stg_appointments\n  WHERE start_time IS NOT NULL\n  UNION\n  SELECT DISTINCT end_time AS t\n  FROM medical_appointment_staging.stg_appointments\n  WHERE end_time IS NOT NULL\n) x;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        288,
+        -16
+      ],
+      "id": "8e0252dc-2c54-4e70-bb21-3791ca4923be",
+      "name": "dim_time",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE medical_appointment_dwh.fact_appointments (\n  appointment_id TEXT PRIMARY KEY,\n\n  patient_sk BIGINT REFERENCES medical_appointment_dwh.dim_patient(patient_sk),\n  status_sk BIGINT REFERENCES medical_appointment_dwh.dim_status(status_sk),\n  appointment_date_sk  BIGINT REFERENCES medical_appointment_dwh.dim_date(date_sk),\n  scheduling_date_sk   BIGINT REFERENCES medical_appointment_dwh.dim_date(date_sk),\n  appointment_time_sk  BIGINT REFERENCES medical_appointment_dwh.dim_time(time_sk),\n  slot_id TEXT,\n  scheduling_interval_days INT,\n  waiting_time_min INT,\n  appointment_duration_min INT,\n  check_in_time TIME,\n  start_time TIME,\n  end_time TIME\n);\n\nINSERT INTO medical_appointment_dwh.fact_appointments (\n  appointment_id,\n  patient_sk,\n  status_sk,\n  appointment_date_sk,\n  scheduling_date_sk,\n  appointment_time_sk,\n  slot_id,\n  scheduling_interval_days,\n  waiting_time_min,\n  appointment_duration_min,\n  check_in_time,\n  start_time,\n  end_time\n)\nSELECT\n  e.appointment_id,\n  p.patient_sk,\n  st.status_sk,\n  d_app.date_sk,\n  d_sch.date_sk,\n  t_app.time_sk,\n  e.slot_id,\n  e.scheduling_interval_days,\n  e.waiting_time_min,\n  e.appointment_duration_min,\n  e.check_in_time,\n  e.start_time,\n  e.end_time\nFROM medical_appointment_staging.stg_appointments e\nLEFT JOIN medical_appointment_dwh.dim_patient p\n  ON e.patient_id = p.patient_id\nLEFT JOIN medical_appointment_dwh.dim_status st\n  ON e.status = st.status_name\nLEFT JOIN medical_appointment_dwh.dim_date d_app\n  ON e.appointment_date = d_app.full_date\nLEFT JOIN medical_appointment_dwh.dim_date d_sch\n  ON e.scheduling_date = d_sch.full_date\nLEFT JOIN medical_appointment_dwh.dim_time t_app\n  ON e.appointment_time = t_app.full_time\nWHERE e.appointment_id IS NOT NULL;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        496,
+        -16
+      ],
+      "id": "ca9da461-5e40-4bca-92ae-638e1df23ce3",
+      "name": "fact_appointments",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE INDEX IF NOT EXISTS idx_fact_patient  ON medical_appointment_dwh.fact_appointments(patient_sk);\nCREATE INDEX IF NOT EXISTS idx_fact_status   ON medical_appointment_dwh.fact_appointments(status_sk);\nCREATE INDEX IF NOT EXISTS idx_fact_app_date ON medical_appointment_dwh.fact_appointments(appointment_date_sk);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        704,
+        -16
+      ],
+      "id": "00fceebb-377b-4b92-b7a0-a9a22888c03c",
+      "name": "indexes",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM medical_appointment_dwh.dim_insurance) AS dim_insurance,\n  (SELECT COUNT(*) FROM medical_appointment_dwh.dim_patient) AS dim_patient,\n  (SELECT COUNT(*) FROM medical_appointment_dwh.dim_status) AS dim_status,\n  (SELECT COUNT(*) FROM medical_appointment_dwh.dim_date) AS dim_date,\n  (SELECT COUNT(*) FROM medical_appointment_dwh.dim_time) AS dim_time,\n  (SELECT COUNT(*) FROM medical_appointment_dwh.fact_appointments) AS fact_appointments;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        912,
+        -16
+      ],
+      "id": "a23d1c39-57ff-44a8-a2c8-b9c441283a5b",
+      "name": "sanity check DWH",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "create and drop ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create and drop ": {
+      "main": [
+        [
+          {
+            "node": "dim_insurance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dim_insurance": {
+      "main": [
+        [
+          {
+            "node": "dim_patient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dim_patient": {
+      "main": [
+        [
+          {
+            "node": "dim_status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dim_status": {
+      "main": [
+        [
+          {
+            "node": "dim_date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dim_date": {
+      "main": [
+        [
+          {
+            "node": "dim_time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dim_time": {
+      "main": [
+        [
+          {
+            "node": "fact_appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fact_appointments": {
+      "main": [
+        [
+          {
+            "node": "indexes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "indexes": {
+      "main": [
+        [
+          {
+            "node": "sanity check DWH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "6fc9158e-3a3e-4bde-9876-0d090b1bccb4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "287dac36dda958907f9cf9dafc99626f4495a0a47ff1c9a1d1b5edb9e842357e"
+  },
+  "id": "G1yMMm7TbuXcAkxw",
+  "tags": []
+}

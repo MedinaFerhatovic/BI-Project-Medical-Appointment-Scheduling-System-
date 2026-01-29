@@ -1,0 +1,395 @@
+{
+  "name": "Workflow 3: appointments.csv → appointments_raw",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "212499d2-56d5-45bf-adb9-7bac3fada837",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE medical_appointment_sources.appointments_raw;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2e8d11a4-386b-4860-b400-3e45edbd72e2",
+      "name": "TRUNCATE appointments",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM medical_appointment_sources.appointments_raw\nLIMIT 10;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1072,
+        -80
+      ],
+      "id": "813a2579-903b-4f4b-8660-93fad1053594",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/appointments.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "39b5cbae-6f70-4149-81dc-c5991eeb380e",
+      "name": "Read file (appointments)"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "d69699c8-1d04-4015-93a1-b08ca7fc4eed",
+      "name": "Extract from File (appointments)"
+    },
+    {
+      "parameters": {
+        "batchSize": 1000,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "7ad7eb56-4555-43f0-a10c-13efaf47996e",
+      "name": "Loop Over Items (appointments)"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "medical_appointment_sources",
+          "mode": "list",
+          "cachedResultName": "medical_appointment_sources"
+        },
+        "table": {
+          "__rl": true,
+          "value": "appointments_raw",
+          "mode": "list",
+          "cachedResultName": "appointments_raw"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "slot_id",
+              "displayName": "slot_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scheduling_date",
+              "displayName": "scheduling_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_date",
+              "displayName": "appointment_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_time",
+              "displayName": "appointment_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scheduling_interval",
+              "displayName": "scheduling_interval",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "check_in_time",
+              "displayName": "check_in_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_duration",
+              "displayName": "appointment_duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "start_time",
+              "displayName": "start_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "end_time",
+              "displayName": "end_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "waiting_time",
+              "displayName": "waiting_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sex",
+              "displayName": "sex",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "age",
+              "displayName": "age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "age_group",
+              "displayName": "age_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1072,
+        176
+      ],
+      "id": "d4b1fcb5-9cfa-4e88-8a94-fae5d5316399",
+      "name": "Insert rows in a table (appointments)",
+      "credentials": {
+        "postgres": {
+          "id": "FJzP8YnKYEbD7JiQ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me (appointments)",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        176
+      ],
+      "id": "8f0effc9-01f7-4327-8a9d-c1ec6e019a2b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "TRUNCATE appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRUNCATE appointments": {
+      "main": [
+        [
+          {
+            "node": "Read file (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read file (appointments)": {
+      "main": [
+        [
+          {
+            "node": "Extract from File (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File (appointments)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items (appointments)": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table (appointments)": {
+      "main": [
+        [
+          {
+            "node": "Replace Me (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me (appointments)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "49090640-3139-453b-934e-2a98c1c7f10e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "287dac36dda958907f9cf9dafc99626f4495a0a47ff1c9a1d1b5edb9e842357e"
+  },
+  "id": "6FLsWuFUUk19Waye",
+  "tags": []
+}
