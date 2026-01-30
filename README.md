@@ -87,7 +87,7 @@ The final workflow builds a **dimensional (star schema) model** optimized for an
 
 <img width="447" height="358" alt="image" src="https://github.com/user-attachments/assets/c4ea7f8e-5299-43be-a33b-b61203a032ed" />
 <img width="413" height="350" alt="image" src="https://github.com/user-attachments/assets/29bdc0b0-78f6-4da7-8005-6144740b7bc5" />
-<img width="688" height="337" alt="image" src="https://github.com/user-attachments/assets/962895e2-0efa-4c44-afca-29627a1d388e" />
+<img width="1061" height="503" alt="Screenshot 2026-01-30 221810" src="https://github.com/user-attachments/assets/f6db925c-a080-403f-8582-4bb483eba504" />
 
 ---
 
